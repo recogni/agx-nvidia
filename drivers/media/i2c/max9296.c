@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define DEBUG
+
 #include <linux/gpio.h>
 #include <linux/module.h>
 #include <linux/of.h>

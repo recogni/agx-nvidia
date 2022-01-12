@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define DEBUG
+
 #include <media/camera_common.h>
 #include <linux/module.h>
 #include <media/max9295.h>
@@ -122,7 +124,7 @@ struct map_ctx {
 	u8 st_id;
 };
 
-static int max9295_write_reg(struct device *dev, u16 addr, u8 val)
+int max9295_write_reg(struct device *dev, u16 addr, u8 val)
 {
 	struct max9295 *priv = dev_get_drvdata(dev);
 	int err;
@@ -137,6 +139,8 @@ static int max9295_write_reg(struct device *dev, u16 addr, u8 val)
 
 	return err;
 }
+
+EXPORT_SYMBOL(max9295_write_reg);
 
 int max9295_setup_streaming(struct device *dev)
 {
@@ -303,6 +307,8 @@ int max9295_setup_control(struct device *dev)
 
 	mutex_lock(&priv->lock);
 
+	dev_dbg(dev, "XXXXXXXXXXX setup_control XXXXXXXXXXXXXXX\n");
+
 	if (!priv->g_client.g_ctx) {
 		dev_err(dev, "%s: no sensor dev client found\n", __func__);
 		err = -EINVAL;
@@ -345,6 +351,7 @@ int max9295_setup_control(struct device *dev)
 		goto error;
 	}
 
+	if ( 0 ) {
 	for (i = 0; i < ARRAY_SIZE(i2c_ovrd); i += 2) {
 		/* update address overrides */
 		i2c_ovrd[i+1] += (i < 4) ? offset1 : offset2;
@@ -353,7 +360,9 @@ int max9295_setup_control(struct device *dev)
 		if ((i2c_ovrd[i] == 0x8B) && prim_priv__ && prim_priv__->pst2_ref)
 			continue;
 
+		dev_err(dev, "%s: Writing to %x with %x\n", __func__, i2c_ovrd[i], i2c_ovrd[i+1] );
 		max9295_write_reg(dev, i2c_ovrd[i], i2c_ovrd[i+1]);
+	}
 	}
 
 	/* dev addr pass-through2 ref */
@@ -363,6 +372,9 @@ int max9295_setup_control(struct device *dev)
 	max9295_write_reg(dev, MAX9295_I2C4_ADDR, (g_ctx->sdev_reg << 1));
 	max9295_write_reg(dev, MAX9295_I2C5_ADDR, (g_ctx->sdev_def << 1));
 
+
+	max9295_write_reg(dev, MAX9295_SRC_PWDN_ADDR, 0x80);
+	max9295_write_reg(dev, MAX9295_SRC_PWDN_ADDR, 0x80);
 	max9295_write_reg(dev, MAX9295_SRC_PWDN_ADDR, MAX9295_PWDN_GPIO);
 	max9295_write_reg(dev, MAX9295_SRC_CTRL_ADDR, MAX9295_RESET_SRC);
 	max9295_write_reg(dev, MAX9295_SRC_OUT_RCLK_ADDR, MAX9295_SRC_RCLK);

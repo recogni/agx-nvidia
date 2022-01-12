@@ -31,6 +31,21 @@ config VIDEO_IMX219
 	  To compile this driver as a module, choose M here: the module
 	  will be called imx219.
 
+config VIDEO_MAX929X
+        tristate "MAX929X GMSL2 support"
+	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+	---help---
+	  This driver supports MAX929X GMSL2.
+
+config VIDEO_AR0820
+        tristate "AR0820 camera sensor support"
+	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API && VIDEO_MAX929X
+	---help---
+	  This driver supports AR0820 camera sensor from Sony
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called ar0820.
+
 config VIDEO_IMX268
 	tristate "IMX268 camera sensor support"
 	depends on I2C && VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API

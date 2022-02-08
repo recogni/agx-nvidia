@@ -18,8 +18,8 @@
 
 #define DEBUG
 
-#include <media/camera_common.h>
 #include <linux/module.h>
+#include <media/camera_common.h>
 #include <media/max9295.h>
 
 /* register specifics */
@@ -52,7 +52,7 @@
 #define MAX9295_CSI_MODE_2X4 0x06
 
 #define MAX9295_CSI_PORT_B(num_lanes) (((num_lanes) << 4) & 0xF0)
-#define MAX9295_CSI_PORT_A(num_lanes) ((num_lanes) & 0x0F)
+#define MAX9295_CSI_PORT_A(num_lanes) ((num_lanes)&0x0F)
 
 #define MAX9295_CSI_1X4_MODE_LANE_MAP1 0xE0
 #define MAX9295_CSI_1X4_MODE_LANE_MAP2 0x04
@@ -131,8 +131,8 @@ int max9295_write_reg(struct device *dev, u16 addr, u8 val)
 
 	err = regmap_write(priv->regmap, addr, val);
 	if (err)
-		dev_err(dev, "%s:i2c write failed, 0x%x = %x\n",
-			__func__, addr, val);
+		dev_err(dev, "%s:i2c write failed, 0x%x = %x\n", __func__, addr,
+			val);
 
 	/* delay before next i2c command as required for SERDES link */
 	usleep_range(100, 110);
@@ -160,12 +160,12 @@ int max9295_setup_streaming(struct device *dev)
 	u32 st_en;
 
 	struct map_ctx map_pipe_dtype[] = {
-		{GMSL_CSI_DT_RAW_12, MAX9295_PIPE_Z_DT_ADDR, 0x2C,
-			MAX9295_ST_ID_2},
-		{GMSL_CSI_DT_UED_U1, MAX9295_PIPE_X_DT_ADDR, 0x30,
-			MAX9295_ST_ID_0},
-		{GMSL_CSI_DT_EMBED, MAX9295_PIPE_Y_DT_ADDR, 0x12,
-			MAX9295_ST_ID_1},
+		{ GMSL_CSI_DT_RAW_12, MAX9295_PIPE_Z_DT_ADDR, 0x2C,
+		  MAX9295_ST_ID_2 },
+		{ GMSL_CSI_DT_UED_U1, MAX9295_PIPE_X_DT_ADDR, 0x30,
+		  MAX9295_ST_ID_0 },
+		{ GMSL_CSI_DT_EMBED, MAX9295_PIPE_Y_DT_ADDR, 0x12,
+		  MAX9295_ST_ID_1 },
 	};
 
 	mutex_lock(&priv->lock);
@@ -209,8 +209,8 @@ int max9295_setup_streaming(struct device *dev)
 	}
 
 	port = (g_ctx->src_csi_port == GMSL_CSI_PORT_B) ?
-			MAX9295_CSI_PORT_B(rx1_lanes) :
-			MAX9295_CSI_PORT_A(rx1_lanes);
+		       MAX9295_CSI_PORT_B(rx1_lanes) :
+			     MAX9295_CSI_PORT_A(rx1_lanes);
 
 	max9295_write_reg(dev, MAX9295_MIPI_RX0_ADDR, csi_mode);
 	max9295_write_reg(dev, MAX9295_MIPI_RX1_ADDR, port);
@@ -224,26 +224,28 @@ int max9295_setup_streaming(struct device *dev)
 		for (j = 0; j < ARRAY_SIZE(map_pipe_dtype); j++) {
 			if (map_pipe_dtype[j].dt == g_stream->st_data_type) {
 				/*
-				 * TODO:
-				 * 1) Remove link specific overrides, depends
-				 * on #2.
-				 * 2) Add support for vc id based stream sel
-				 * overrides TX_SRC_SEL. would be useful in
-				 * using same mappings in all ser devs.
-				 */
+         * TODO:
+         * 1) Remove link specific overrides, depends
+         * on #2.
+         * 2) Add support for vc id based stream sel
+         * overrides TX_SRC_SEL. would be useful in
+         * using same mappings in all ser devs.
+         */
 				if (g_ctx->serdes_csi_link ==
-					GMSL_SERDES_CSI_LINK_B) {
+				    GMSL_SERDES_CSI_LINK_B) {
 					map_pipe_dtype[j].addr += 2;
 					map_pipe_dtype[j].st_id += 1;
 				}
 
 				g_stream->st_id_sel = map_pipe_dtype[j].st_id;
 				st_en = (map_pipe_dtype[j].addr ==
-						MAX9295_PIPE_X_DT_ADDR) ?
-							0xC0 : 0x40;
+					 MAX9295_PIPE_X_DT_ADDR) ?
+						0xC0 :
+						      0x40;
 
 				max9295_write_reg(dev, map_pipe_dtype[j].addr,
-					(st_en | map_pipe_dtype[j].val));
+						  (st_en |
+						   map_pipe_dtype[j].val));
 			}
 		}
 	}
@@ -254,16 +256,17 @@ int max9295_setup_streaming(struct device *dev)
 
 	if (g_ctx->src_csi_port == GMSL_CSI_PORT_B) {
 		st_pipe = (MAX9295_PIPE_X_START_B | MAX9295_PIPE_Y_START_B |
-			MAX9295_PIPE_Z_START_B | MAX9295_PIPE_U_START_B);
+			   MAX9295_PIPE_Z_START_B | MAX9295_PIPE_U_START_B);
 		port_sel |= (MAX9295_EN_LINE_INFO | MAX9295_START_PORT_B);
 	} else {
 		st_pipe = MAX9295_PIPE_X_START_A | MAX9295_PIPE_Y_START_A |
-			MAX9295_PIPE_Z_START_A | MAX9295_PIPE_U_START_A;
+			  MAX9295_PIPE_Z_START_A | MAX9295_PIPE_U_START_A;
 		port_sel |= (MAX9295_EN_LINE_INFO | MAX9295_START_PORT_A);
 	}
 
-	pipe_en = (MAX9295_VID_TX_EN_X | MAX9295_VID_TX_EN_Y |
-		MAX9295_VID_TX_EN_Z | MAX9295_VID_TX_EN_U | MAX9295_VID_INIT);
+	pipe_en =
+		(MAX9295_VID_TX_EN_X | MAX9295_VID_TX_EN_Y |
+		 MAX9295_VID_TX_EN_Z | MAX9295_VID_TX_EN_U | MAX9295_VID_INIT);
 
 	max9295_write_reg(dev, MAX9295_START_PIPE_ADDR, st_pipe);
 	max9295_write_reg(dev, MAX9295_CSI_PORT_SEL_ADDR, port_sel);
@@ -287,27 +290,16 @@ int max9295_setup_control(struct device *dev)
 	u32 i;
 
 	u8 i2c_ovrd[] = {
-		0x6B, 0x10,
-		0x73, 0x11,
-		0x7B, 0x30,
-		0x83, 0x30,
-		0x93, 0x30,
-		0x9B, 0x30,
-		0xA3, 0x30,
-		0xAB, 0x30,
-		0x8B, 0x30,
+		0x6B, 0x10, 0x73, 0x11, 0x7B, 0x30, 0x83, 0x30, 0x93,
+		0x30, 0x9B, 0x30, 0xA3, 0x30, 0xAB, 0x30, 0x8B, 0x30,
 	};
 
 	u8 addr_offset[] = {
-		0x80, 0x00, 0x00,
-		0x84, 0x00, 0x01,
-		0xC0, 0x02, 0x02,
-		0xC4, 0x02, 0x03,
+		0x80, 0x00, 0x00, 0x84, 0x00, 0x01,
+		0xC0, 0x02, 0x02, 0xC4, 0x02, 0x03,
 	};
 
 	mutex_lock(&priv->lock);
-
-	dev_dbg(dev, "XXXXXXXXXXX setup_control XXXXXXXXXXXXXXX\n");
 
 	if (!priv->g_client.g_ctx) {
 		dev_err(dev, "%s: no sensor dev client found\n", __func__);
@@ -320,7 +312,7 @@ int max9295_setup_control(struct device *dev)
 	if (prim_priv__) {
 		/* update address reassingment */
 		max9295_write_reg(&prim_priv__->i2c_client->dev,
-				MAX9295_DEV_ADDR, (g_ctx->ser_reg << 1));
+				  MAX9295_DEV_ADDR, (g_ctx->ser_reg << 1));
 	}
 
 	if (g_ctx->serdes_csi_link == GMSL_SERDES_CSI_LINK_A)
@@ -339,8 +331,8 @@ int max9295_setup_control(struct device *dev)
 
 	for (i = 0; i < ARRAY_SIZE(addr_offset); i += 3) {
 		if ((g_ctx->ser_reg << 1) == addr_offset[i]) {
-			offset1 = addr_offset[i+1];
-			offset2 = addr_offset[i+2];
+			offset1 = addr_offset[i + 1];
+			offset2 = addr_offset[i + 2];
 			break;
 		}
 	}
@@ -351,30 +343,36 @@ int max9295_setup_control(struct device *dev)
 		goto error;
 	}
 
-	if ( 0 ) {
-	for (i = 0; i < ARRAY_SIZE(i2c_ovrd); i += 2) {
-		/* update address overrides */
-		i2c_ovrd[i+1] += (i < 4) ? offset1 : offset2;
+	if (0) {
+		for (i = 0; i < ARRAY_SIZE(i2c_ovrd); i += 2) {
+			/* update address overrides */
+			i2c_ovrd[i + 1] += (i < 4) ? offset1 : offset2;
 
-		/* i2c passthrough2 must be configured once for all devices */
-		if ((i2c_ovrd[i] == 0x8B) && prim_priv__ && prim_priv__->pst2_ref)
-			continue;
+			/* i2c passthrough2 must be configured once for all devices */
+			if ((i2c_ovrd[i] == 0x8B) && prim_priv__ &&
+			    prim_priv__->pst2_ref)
+				continue;
 
-		dev_err(dev, "%s: Writing to %x with %x\n", __func__, i2c_ovrd[i], i2c_ovrd[i+1] );
-		max9295_write_reg(dev, i2c_ovrd[i], i2c_ovrd[i+1]);
-	}
+			dev_err(dev, "%s: Writing to %x with %x\n", __func__,
+				i2c_ovrd[i], i2c_ovrd[i + 1]);
+			max9295_write_reg(dev, i2c_ovrd[i], i2c_ovrd[i + 1]);
+		}
 	}
 
 	/* dev addr pass-through2 ref */
 	if (prim_priv__)
 		prim_priv__->pst2_ref++;
 
-	max9295_write_reg(dev, MAX9295_I2C4_ADDR, (g_ctx->sdev_reg << 1));
-	max9295_write_reg(dev, MAX9295_I2C5_ADDR, (g_ctx->sdev_def << 1));
+	/* Disable translation for now*/
+	if (0) {
+		max9295_write_reg(dev, MAX9295_I2C4_ADDR,
+				  (g_ctx->sdev_reg << 1));
+		max9295_write_reg(dev, MAX9295_I2C5_ADDR,
+				  (g_ctx->sdev_def << 1));
+	}
 
-
-	max9295_write_reg(dev, MAX9295_SRC_PWDN_ADDR, 0x80);
-	max9295_write_reg(dev, MAX9295_SRC_PWDN_ADDR, 0x80);
+	max9295_write_reg(dev, MAX9295_SRC_PWDN_ADDR, MAX9295_RESET_ALL);
+	usleep_range(100, 200);
 	max9295_write_reg(dev, MAX9295_SRC_PWDN_ADDR, MAX9295_PWDN_GPIO);
 	max9295_write_reg(dev, MAX9295_SRC_CTRL_ADDR, MAX9295_RESET_SRC);
 	max9295_write_reg(dev, MAX9295_SRC_OUT_RCLK_ADDR, MAX9295_SRC_RCLK);
@@ -404,10 +402,11 @@ int max9295_reset_control(struct device *dev)
 	if (prim_priv__) {
 		prim_priv__->pst2_ref--;
 
-		max9295_write_reg(dev, MAX9295_DEV_ADDR, (prim_priv__->def_addr << 1));
+		max9295_write_reg(dev, MAX9295_DEV_ADDR,
+				  (prim_priv__->def_addr << 1));
 
 		max9295_write_reg(&prim_priv__->i2c_client->dev,
-					MAX9295_CTRL0_ADDR, MAX9295_RESET_ALL);
+				  MAX9295_CTRL0_ADDR, MAX9295_RESET_ALL);
 	}
 
 error:
@@ -479,14 +478,14 @@ error:
 }
 EXPORT_SYMBOL(max9295_sdev_unpair);
 
-static  struct regmap_config max9295_regmap_config = {
+static struct regmap_config max9295_regmap_config = {
 	.reg_bits = 16,
 	.val_bits = 8,
 	.cache_type = REGCACHE_RBTREE,
 };
 
 static int max9295_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
+			 const struct i2c_device_id *id)
 {
 	struct max9295 *priv;
 	int err = 0;
@@ -496,11 +495,11 @@ static int max9295_probe(struct i2c_client *client,
 
 	priv = devm_kzalloc(&client->dev, sizeof(*priv), GFP_KERNEL);
 	priv->i2c_client = client;
-	priv->regmap = devm_regmap_init_i2c(priv->i2c_client,
-				&max9295_regmap_config);
+	priv->regmap =
+		devm_regmap_init_i2c(priv->i2c_client, &max9295_regmap_config);
 	if (IS_ERR(priv->regmap)) {
-		dev_err(&client->dev,
-			"regmap init failed: %ld\n", PTR_ERR(priv->regmap));
+		dev_err(&client->dev, "regmap init failed: %ld\n",
+			PTR_ERR(priv->regmap));
 		return -ENODEV;
 	}
 
@@ -508,9 +507,8 @@ static int max9295_probe(struct i2c_client *client,
 
 	if (of_get_property(node, "is-prim-ser", NULL)) {
 		if (prim_priv__) {
-			dev_err(&client->dev,
-				"prim-ser already exists\n");
-				return -EEXIST;
+			dev_err(&client->dev, "prim-ser already exists\n");
+			return -EEXIST;
 		}
 
 		err = of_property_read_u32(node, "reg", &priv->def_addr);
@@ -546,24 +544,27 @@ static int max9295_remove(struct i2c_client *client)
 
 static const struct i2c_device_id max9295_id[] = {
 	{ "max9295", 0 },
-	{ },
+	{},
 };
 
 const struct of_device_id max9295_of_match[] = {
-	{ .compatible = "nvidia,max9295", },
-	{ },
+	{
+		.compatible = "nvidia,max9295",
+	},
+	{},
 };
 MODULE_DEVICE_TABLE(of, max9295_of_match);
 MODULE_DEVICE_TABLE(i2c, max9295_id);
 
 static struct i2c_driver max9295_i2c_driver = {
-	.driver = {
-		.name = "max9295",
-		.owner = THIS_MODULE,
-	},
-	.probe = max9295_probe,
-	.remove = max9295_remove,
-	.id_table = max9295_id,
+    .driver =
+        {
+            .name = "max9295",
+            .owner = THIS_MODULE,
+        },
+    .probe = max9295_probe,
+    .remove = max9295_remove,
+    .id_table = max9295_id,
 };
 
 static int __init max9295_init(void)

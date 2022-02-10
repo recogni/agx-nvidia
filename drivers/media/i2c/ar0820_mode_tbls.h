@@ -22,7 +22,7 @@
 #define AR0820_TABLE_WAIT_MS	0
 #define AR0820_TABLE_END	1
 
-#define ar0820_reg struct reg_16
+typedef struct reg_16 ar0820_reg;
 
 static ar0820_reg ar0820_start_stream[] = {
 #if 0

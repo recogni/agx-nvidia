@@ -858,7 +858,7 @@ static int max9296_parse_dt(struct max9296 *priv,
 static struct regmap_config max9296_regmap_config = {
 	.reg_bits = 16,
 	.val_bits = 8,
-	.cache_type = REGCACHE_RBTREE,
+	.cache_type = REGCACHE_NONE,
 };
 
 static int max9296_probe(struct i2c_client *client,

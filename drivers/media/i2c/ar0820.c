@@ -39,8 +39,15 @@
 #define AR0820_MIN_FRAME_LENGTH 0x0100
 #define AR0820_MAX_FRAME_LENGTH 0xffff
 
+#define AR0820_DEFAULT_FRAME_LENGTH   0x8F8  /* 0x0920 */
+
+
 /* ar0820 sensor register address */
-#define AR0820_FRAME_LENGTH_ADDR_MSB 0x300a
+#ifdef AR0820_FRAME_LENGTH_ADDR_MSB
+	#undef AR0820_FRAME_LENGTH_ADDR_MSB
+	#define AR0820_FRAME_LENGTH_ADDR_MSB 0x300a
+#endif
+
 #define AR0820_COARSE_INTEG_TIME_ADDR 0X3012
 #define AR0820_ANALOG_GAIN 0x3366
 #define AR0820_ANALOG_GAIN2 0x336A
@@ -56,6 +63,7 @@ MODULE_DEVICE_TABLE(of, ar0820_of_match);
 static const u32 ctrl_cid_list[] = {
 	TEGRA_CAMERA_CID_GAIN,
 	TEGRA_CAMERA_CID_EXPOSURE,
+	TEGRA_CAMERA_CID_EXPOSURE_SHORT,
 	TEGRA_CAMERA_CID_FRAME_RATE,
 	TEGRA_CAMERA_CID_SENSOR_MODE_ID,
 };
@@ -168,12 +176,37 @@ static struct mutex serdes_lock__;
 
 extern int max9295_write_reg(struct device *dev, u16 addr, u8 val);
 
+static int ar0820_reset(struct ar0820 *priv) {
+	struct device *dev;
+	const unsigned short GPIO_REG_A = 0x2be;
+	int err = 0;
+
+	dev = &priv->i2c_client->dev;
+
+	/* Write GPIO_REG_A to strobe reset on sensor */
+	err = max9295_write_reg(priv->ser_dev, GPIO_REG_A, 0x80);
+	if (err) {
+		dev_err(dev, "failed to write ar0820 gpio reset on\n");
+		goto error;
+	}
+	usleep_range(100, 200);
+
+	err = max9295_write_reg(priv->ser_dev, GPIO_REG_A, 0x90);
+	if (err) {
+		dev_err(dev, "failed to write ar0820 gpio reset off\n");
+		goto error;
+	}	
+	usleep_range(100, 200);
+
+error:	
+	return err;
+}
+
 static int ar0820_gmsl_serdes_setup(struct ar0820 *priv)
 {
 	int err = 0;
 	int des_err = 0;
 	struct device *dev;
-	/*	const unsigned short GPIO_REG_A = 0x2be;*/
 
 	if (!priv || !priv->ser_dev || !priv->dser_dev || !priv->i2c_client)
 		return -EINVAL;
@@ -197,22 +230,7 @@ static int ar0820_gmsl_serdes_setup(struct ar0820 *priv)
 	if (err)
 		dev_err(dev, "gmsl serializer setup failed\n");
 
-#if 0
-	/* Write GPIO_REG_A to strobe reset on sensor */
-	err = max9295_write_reg(priv->ser_dev, GPIO_REG_A, 0x80);
-	if (err) {
-		dev_err(dev, "failed to write ar0820 gpio reset on\n");
-		goto error;
-	}
-	usleep_range(10, 20);
-
-	err = max9295_write_reg(priv->ser_dev, GPIO_REG_A, 0x90);
-	if (err) {
-		dev_err(dev, "failed to write ar0820 gpio reset off\n");
-		goto error;
-	}	
-	usleep_range(10, 20);
-#endif
+	ar0820_reset(priv);
 
 	des_err = max9296_setup_control(priv->dser_dev, &priv->i2c_client->dev);
 	if (des_err) {
@@ -536,7 +554,12 @@ ar0820_parse_dt(struct tegracam_device *tc_dev)
 	board_priv_pdata->has_eeprom = of_property_read_bool(np, "has-eeprom");
 
 	ar0820_s = tegracam_get_privdata(tc_dev);
-	ar0820_s->ignore_i2c = of_property_read_bool(np, "ignore-i2c");
+
+	if (ar0820_s) {
+		dev_dbg(dev, "Searching of ignore-i2c");
+		ar0820_s->ignore_i2c = of_property_read_bool(np, "ignore-i2c");
+		dev_dbg(dev, "Searching of ignore-i2c");
+	}
 
 	return board_priv_pdata;
 
@@ -930,6 +953,8 @@ static int ar0820_probe(struct i2c_client *client,
 		dev_err(dev, "tegra camera subdev registration failed\n");
 		return err;
 	}
+	
+
 
 	dev_dbg(dev, "detected ar0820 sensor\n");
 

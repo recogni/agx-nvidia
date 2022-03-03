@@ -835,7 +835,7 @@ static int max9296_parse_dt(struct max9296 *priv,
 	priv->reset_gpio = of_get_named_gpio(node, "reset-gpios", 0);
 	if (priv->reset_gpio < 0) {
 		dev_err(&client->dev, "reset-gpios not found %d\n", err);
-		return err;
+		priv->reset_gpio = 0;
 	}
 
 	/* digital 1.2v */

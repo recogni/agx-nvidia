@@ -184,6 +184,7 @@ static int ar0820_reset(struct ar0820 *priv) {
 	dev = &priv->i2c_client->dev;
 
 	/* Write GPIO_REG_A to strobe reset on sensor */
+	dev_err(dev, "Setting AR0820 to reset\n");
 	err = max9295_write_reg(priv->ser_dev, GPIO_REG_A, 0x80);
 	if (err) {
 		dev_err(dev, "failed to write ar0820 gpio reset on\n");
@@ -192,6 +193,7 @@ static int ar0820_reset(struct ar0820 *priv) {
 	usleep_range(100, 200);
 
 	err = max9295_write_reg(priv->ser_dev, GPIO_REG_A, 0x90);
+	dev_err(dev, "Setting AR0820 to not reset\n");	
 	if (err) {
 		dev_err(dev, "failed to write ar0820 gpio reset off\n");
 		goto error;
@@ -343,6 +345,7 @@ static int ar0820_power_on(struct camera_common_data *s_data)
 
 skip_power_seqn:
 	if (pw->reset_gpio) {
+	  dev_err(dev, "Setting reset gpio\n");
 		if (gpio_cansleep(pw->reset_gpio))
 			gpio_set_value_cansleep(pw->reset_gpio, 1);
 		else
@@ -570,6 +573,7 @@ ar0820_parse_dt(struct tegracam_device *tc_dev)
 
 static int ar0820_set_mode(struct tegracam_device *tc_dev)
 {
+#if 0
 	struct ar0820 *priv = (struct ar0820 *)tegracam_get_privdata(tc_dev);
 	struct camera_common_data *s_data = tc_dev->s_data;
 	struct device *dev = tc_dev->dev;
@@ -580,7 +584,23 @@ static int ar0820_set_mode(struct tegracam_device *tc_dev)
 	err = ar0820_write_table(priv, mode_table[s_data->mode]);
 	if (err)
 		return err;
+#endif
+	struct ar0820 *priv = (struct ar0820 *)tegracam_get_privdata(tc_dev);
+	struct camera_common_data *s_data = tc_dev->s_data;
+	struct device *dev = tc_dev->dev;
+	const struct of_device_id *match;
+	int err;
 
+	match = of_match_device(ar0820_of_match, dev);
+	if (!match) {
+		dev_err(dev, "Failed to find matching dt id\n");
+		return -EINVAL;
+	}
+
+	err = ar0820_write_table(priv, mode_table[s_data->mode_prop_idx]);
+	if (err)
+		return err;	
+	
 	return 0;
 }
 
@@ -935,7 +955,7 @@ static int ar0820_probe(struct i2c_client *client,
 	}
 
 	/* Try to read the part ID */
-	{
+	if (0) {
 		unsigned int chip_id;
 		err = regmap_read(priv->s_data->regmap, 0x3000, &chip_id);
 		if (err) {

@@ -17,6 +17,8 @@
  */
 #define DEBUG
 
+#define IGNORE_I2C_HACK 1
+
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/gpio.h>
@@ -143,30 +145,32 @@ static int ar0820_write_table(struct ar0820 *priv, const ar0820_reg table[])
 	int ret = 0;
 	int retry;
 
-	while (table[i].addr != AR0820_TABLE_END) {
-		retry = 5;
+	if (!priv->ignore_i2c && !(IGNORE_I2C_HACK)) {
+		while (table[i].addr != AR0820_TABLE_END) {
+			retry = 5;
 
-		if (table[i].addr == AR0820_TABLE_WAIT_MS) {
-			dev_dbg(dev, "%s: sleep %d\n", __func__, table[i].val);
-			msleep(table[i].val);
-			i++;
-			continue;
-		}
-
-	retry_sensor:
-		ret = ar0820_write_reg(priv->s_data, table[i].addr,
-				       table[i].val);
-		if (ret) {
-			retry--;
-			if (retry > 0) {
-				dev_warn(dev, "ar0820_write_reg: try %d\n",
-					 retry);
-				msleep(4);
-				goto retry_sensor;
+			if (table[i].addr == AR0820_TABLE_WAIT_MS) {
+				dev_dbg(dev, "%s: sleep %d\n", __func__, table[i].val);
+				msleep(table[i].val);
+				i++;
+				continue;
 			}
-			return -1;
+
+		retry_sensor:
+			ret = ar0820_write_reg(priv->s_data, table[i].addr,
+						table[i].val);
+			if (ret) {
+				retry--;
+				if (retry > 0) {
+					dev_warn(dev, "ar0820_write_reg: try %d\n",
+						retry);
+					msleep(4);
+					goto retry_sensor;
+				}
+				return -1;
+			}
+			i++;
 		}
-		i++;
 	}
 
 	return 0;
@@ -227,12 +231,14 @@ static int ar0820_gmsl_serdes_setup(struct ar0820 *priv)
 		goto error;
 	}
 
-	err = max9295_setup_control(priv->ser_dev);
-	/* proceed even if ser setup failed, to setup deser correctly */
-	if (err)
-		dev_err(dev, "gmsl serializer setup failed\n");
+	if (!priv->ignore_i2c && 0) {
+		err = max9295_setup_control(priv->ser_dev);
+		/* proceed even if ser setup failed, to setup deser correctly */
+		if (err)
+			dev_err(dev, "gmsl serializer setup failed\n");
 
-	ar0820_reset(priv);
+		ar0820_reset(priv);
+	}
 
 	des_err = max9296_setup_control(priv->dser_dev, &priv->i2c_client->dev);
 	if (des_err) {

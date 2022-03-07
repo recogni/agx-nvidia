@@ -50,7 +50,9 @@
 #define MAX9296_PIPE_X_ST_SEL_ADDR 0x50
 
 #define MAX9296_PWDN_PHYS_ADDR 0x332
+#define MAX9296_PHY0_CLK_ADDR 0x31d
 #define MAX9296_PHY1_CLK_ADDR 0x320
+#define MAX9296_PHY_CLK_ADDR_OFFSET 3
 #define MAX9296_CTRL0_ADDR 0x10
 
 /* data defines */
@@ -126,6 +128,7 @@ struct max9296 {
 	int reset_gpio;
 	int pw_ref;
 	struct regulator *vdd_cam_1v2;
+	u32 dphy_speed_mbps;
 };
 
 static int max9296_write_reg(struct device *dev,
@@ -768,8 +771,13 @@ int max9296_setup_streaming(struct device *dev, struct device *s_dev)
 			MAX9296_LANE_MAP1_ADDR, priv->lane_mp1);
 		max9296_write_reg(dev,
 			MAX9296_LANE_MAP2_ADDR, priv->lane_mp2);
+
+		for (i=0; i<4; ++i) {
+			/* Register value is in 100 Mbps increments */
 		max9296_write_reg(dev,
-			MAX9296_PHY1_CLK_ADDR, MAX9296_PHY1_CLK);
+							  MAX9296_PHY0_CLK_ADDR + (MAX9296_PHY_CLK_ADDR_OFFSET*i),
+							  0x20 | ( (priv->dphy_speed_mbps + 99) / 100));
+		}
 
 		priv->lane_setup = true;
 	}
@@ -851,6 +859,20 @@ static int max9296_parse_dt(struct max9296 *priv,
 	} else {
 		priv->vdd_cam_1v2 = NULL;
 	}
+
+	/* phy data rate */
+	err = of_property_read_u32(node, "dphy-speed-mbps", &value);
+	if (err < 0) {
+		dev_err(&client->dev, "No dphy-speed-mbps defined\n");
+		return err;
+	} 
+
+	if ((value > 2000) || (value < 400)) {
+		dev_err(&client->dev, "Unreasonable dphy-speed-mbps value %d\n", value);
+		return EINVAL;
+	}
+
+	priv->dphy_speed_mbps = value;
 
 	return 0;
 }

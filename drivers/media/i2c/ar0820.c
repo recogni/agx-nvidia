@@ -834,13 +834,16 @@ static int ar0820_board_setup(struct ar0820 *priv)
 		if (!strcmp(str_value1[i], "raw12")) {
 			priv->g_ctx.streams[i].st_data_type =
 				GMSL_CSI_DT_RAW_12;
+		} else if (!strcmp(str_value1[i], "raw16")) {
+			priv->g_ctx.streams[i].st_data_type =
+				GMSL_CSI_DT_RAW_16;
 		} else if (!strcmp(str_value1[i], "embed")) {
 			priv->g_ctx.streams[i].st_data_type = GMSL_CSI_DT_EMBED;
 		} else if (!strcmp(str_value1[i], "ued-u1")) {
 			priv->g_ctx.streams[i].st_data_type =
 				GMSL_CSI_DT_UED_U1;
 		} else {
-			dev_err(dev, "invalid stream data type\n");
+			dev_err(dev, "invalid stream data type %s\n", str_value1[i]);
 			goto error;
 		}
 	}

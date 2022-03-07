@@ -231,7 +231,7 @@ static int ar0820_gmsl_serdes_setup(struct ar0820 *priv)
 		goto error;
 	}
 
-	if (!priv->ignore_i2c && 0) {
+	if (!priv->ignore_i2c && !(IGNORE_I2C_HACK)) {
 		err = max9295_setup_control(priv->ser_dev);
 		/* proceed even if ser setup failed, to setup deser correctly */
 		if (err)

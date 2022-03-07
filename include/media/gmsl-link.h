@@ -51,6 +51,7 @@
 
 /* Didn't find kernel defintions, for now adding here */
 #define GMSL_CSI_DT_RAW_12 0x2C
+#define GMSL_CSI_DT_RAW_16 0x2E
 #define GMSL_CSI_DT_UED_U1 0x30
 #define GMSL_CSI_DT_EMBED 0x12
 

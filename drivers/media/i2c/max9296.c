@@ -47,6 +47,8 @@
 #define MAX9296_PIPE_X_SRC_2_MAP_ADDR 0x411
 #define MAX9296_PIPE_X_DST_2_MAP_ADDR 0x412
 
+#define MAX9296_SKEW_ADDR 0x443
+
 #define MAX9296_PIPE_X_ST_SEL_ADDR 0x50
 
 #define MAX9296_PWDN_PHYS_ADDR 0x332
@@ -764,6 +766,11 @@ int max9296_setup_streaming(struct device *dev, struct device *s_dev)
 	max9296_write_reg(dev, lane_ctrl_addr,
 		MAX9296_LANE_CTRL_MAP(g_ctx->num_csi_lanes-1));
 
+	/* 
+	 * Setup up deskew config for automatic deskew
+         */
+	max9296_write_reg(dev, MAX9296_SKEW_ADDR, 0x90);
+	
 	if (!priv->lane_setup) {
 		max9296_write_reg(dev,
 			MAX9296_DST_CSI_MODE_ADDR, priv->csi_mode);
